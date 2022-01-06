@@ -1,3 +1,4 @@
+import * as uuid from 'uuid';
 import { OAuth2Server, MutableToken } from './index';
 import { Request } from 'express';
 
@@ -22,8 +23,13 @@ void (async () => {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         [process.env.CLAIMS_NAMESPACE ||
         server.issuer.url ||
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        'http://localhost']: req.body.payload || {},
+        'http://localhost']: {
+          environment: process.env.ENV_NAME || 'development',
+          sscRole: process.env.DEFAULT_ROLE || 'MEMBER',
+          userId: process.env.DEFAULT_USER_ID || uuid.v4(),
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          ...req.body.payload,
+        },
       });
     }
   );
