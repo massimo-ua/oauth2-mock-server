@@ -13,6 +13,7 @@ void (async () => {
   });
   // Generate a new RSA key and add it to the keystore
   await server.issuer.keys.generate(process.env.ALGORITHM || 'RS256');
+  server.issuer.url = process.env.ISSUER_URL || server.issuer.url;
   //
   server.service.once(
     'beforeTokenSigning',
