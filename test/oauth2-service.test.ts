@@ -2,22 +2,75 @@ import request from 'supertest';
 import { IncomingMessage } from 'http';
 import type { Express } from 'express';
 
-import { OAuth2Issuer } from '../src/lib/oauth2-issuer';
+import { OAuth2Issuer } from '../src';
 import { OAuth2Service } from '../src/lib/oauth2-service';
-import { MutableRedirectUri } from '../src/lib/types';
+import { MutableRedirectUri } from '../src';
 
 import * as testKeys from './keys';
 import { verifyTokenWithKey } from './lib/test_helpers';
 
 describe('OAuth 2 service', () => {
+  let issuer: OAuth2Issuer;
   let service: OAuth2Service;
 
   beforeAll(async () => {
-    const issuer = new OAuth2Issuer();
+    issuer = new OAuth2Issuer();
     issuer.url = 'https://issuer.example.com';
     await issuer.keys.add(testKeys.getParsed('test-rs256-key.json'));
 
     service = new OAuth2Service(issuer);
+  });
+
+  it('should use custom endpoint paths', async () => {
+    const customService = new OAuth2Service(issuer, {
+      wellKnownDocument: '/custom-well-known',
+      jwks: '/custom-jwks',
+      token: '/custom-token',
+      authorize: '/custom-authorize',
+      userinfo: '/custom-userinfo',
+      // 'revoke', 'endSession' purposefully omitted to test defaults
+    });
+
+    // OpenID well known document
+    const res = await request(customService.requestHandler)
+      .get('/custom-well-known')
+      .expect(200);
+    const { url } = customService.issuer;
+    expect(res.body).toMatchObject({
+      jwks_uri: `${url!}/custom-jwks`,
+      token_endpoint: `${url!}/custom-token`,
+      authorization_endpoint: `${url!}/custom-authorize`,
+      userinfo_endpoint: `${url!}/custom-userinfo`,
+      revocation_endpoint: `${url!}/revoke`,
+      end_session_endpoint: `${url!}/endsession`
+    });
+
+    // GET
+    for (const [path, expectedStatus, query] of [
+      ['/custom-jwks', 200],
+      ['/jwks', 404],
+      ['/custom-userinfo', 200],
+      ['/userinfo', 404],
+      ['/authorize', 404],
+      ['/custom-authorize', 302, 'redirect_uri=http://example.com&scope=dummy_scope&state=1'],
+      ['/endsession', 302, 'post_logout_redirect_uri=http://example.com']
+    ]) {
+      await request(customService.requestHandler)
+        .get(path as string)
+        .query((query as string) ?? '')
+        .expect(expectedStatus);
+    }
+
+    // POST
+    for (const [path, expectedStatus] of [
+      ['/custom-token', 500], // 500 implies it was routed successfully
+      ['/token', 404],
+      ['/revoke', 200]
+    ]) {
+      await request(customService.requestHandler)
+        .post(path as string)
+        .expect(expectedStatus);
+    }
   });
 
   it('should expose an OpenID configuration endpoint', async () => {
@@ -345,26 +398,6 @@ describe('OAuth 2 service', () => {
     expect(decoded.payload).toMatchObject({
       sub: 'johndoe',
       aud: 'abcecedf',
-    });
-  });
-
-  it('should expose a token endpoint that accepts a JSON request body', async () => {
-    const res = await request(service.requestHandler)
-      .post('/token')
-      .type('json')
-      .send({
-        grant_type: 'password',
-        username: 'the-resource-owner@example.com',
-        scope: 'urn:first-scope urn:second-scope',
-      })
-      .expect(200);
-
-    expect(res.body).toMatchObject({
-      access_token: expect.any(String),
-      token_type: 'Bearer',
-      expires_in: 3600,
-      scope: 'urn:first-scope urn:second-scope',
-      refresh_token: expect.any(String),
     });
   });
 

@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { OAuth2Server } from '../src/lib/oauth2-server';
+import { OAuth2Server } from '../src';
 
 describe('OAuth 2 Server', () => {
   it('should be able to start and stop the server', async () => {
@@ -51,6 +51,20 @@ describe('OAuth 2 Server', () => {
       .set('Content-Type', 'multipart/form-data;');
 
     expect(res.text).toContain("[ERR_ASSERTION]: Invalid &#39;grant_type&#39; type");
+
+    await expect(server.stop()).resolves.not.toThrow();
+  });
+
+  it('should override custom endpoint pathnames', async () => {
+    const endpoints = { jwks: '/custom-jwks' };
+    const server = new OAuth2Server(undefined, undefined, { endpoints });
+
+    await expect(server.start()).resolves.not.toThrow();
+
+    const host = `http://127.0.0.1:${server.address().port}`;
+    await request(host)
+      .get('/custom-jwks')
+      .expect(200);
 
     await expect(server.stop()).resolves.not.toThrow();
   });
