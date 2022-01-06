@@ -3,3 +3,4 @@ TestResults/
 .vscode
 .cache/
 dist/
+.idea/
