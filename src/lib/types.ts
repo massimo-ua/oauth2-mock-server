@@ -105,5 +105,5 @@ export interface OAuth2Options {
 }
 
 export interface OAuthIssuerOptions {
-  aud?: string;
+  audience?: string;
 }

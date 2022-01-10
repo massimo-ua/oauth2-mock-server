@@ -46,7 +46,7 @@ export class OAuth2Issuer extends EventEmitter {
   url: string | undefined;
 
   private readonly _keys: JWKStore;
-  private readonly aud: string | undefined;
+  private readonly audience: string[];
 
   /**
    * Creates a new instance of HttpServer.
@@ -56,8 +56,8 @@ export class OAuth2Issuer extends EventEmitter {
   constructor(options: OAuthIssuerOptions) {
     super();
     this.url = undefined;
-    this.aud = options.aud;
     this._keys = new JWKStore();
+    this.audience = options.audience ? options.audience.split(',') : [];
   }
 
   /**
@@ -96,16 +96,8 @@ export class OAuth2Issuer extends EventEmitter {
       iat: timestamp,
       exp: timestamp + (opts?.expiresIn ?? defaultTokenTtl),
       nbf: timestamp - 10,
-      aud: [],
+      aud: [this.url, ...this.audience],
     };
-
-    if (this.aud) {
-      payload.aud.push(...this.aud.split(','));
-    }
-
-    if (this.url) {
-      payload.aud.push(this.url);
-    }
 
     if (opts?.scopesOrTransform !== undefined) {
       const scopesOrTransform = opts.scopesOrTransform;

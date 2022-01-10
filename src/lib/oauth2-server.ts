@@ -49,7 +49,7 @@ export class OAuth2Server extends HttpServer {
     }
 
     const iss = new OAuth2Issuer({
-      aud: oauth2Options?.audience,
+      audience: oauth2Options?.audience,
     });
 
     const serv = new OAuth2Service(iss, oauth2Options?.endpoints);

@@ -17,7 +17,7 @@ void (async () => {
   await server.issuer.keys.generate(process.env.ALGORITHM || 'RS256');
   server.issuer.url = process.env.ISSUER_URL || server.issuer.url;
   //
-  server.service.once(
+  server.service.on(
     'beforeTokenSigning',
     (token: MutableToken, req: Request) => {
       Object.assign(token.payload, {
