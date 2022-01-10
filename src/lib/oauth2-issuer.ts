@@ -25,7 +25,13 @@ import { importJWK, SignJWT } from 'jose';
 
 import { JWKStore } from './jwk-store';
 import { assertIsString, defaultTokenTtl } from './helpers';
-import { Header, MutableToken, Payload, TokenBuildOptions } from './types';
+import {
+  Header,
+  MutableToken,
+  OAuthIssuerOptions,
+  Payload,
+  TokenBuildOptions,
+} from './types';
 import { InternalEvents } from './types-internals';
 
 /**
@@ -39,16 +45,19 @@ export class OAuth2Issuer extends EventEmitter {
    */
   url: string | undefined;
 
-  #keys: JWKStore;
+  private readonly _keys: JWKStore;
+  private readonly aud: string | undefined;
 
   /**
    * Creates a new instance of HttpServer.
+   *
+   * @param options
    */
-  constructor() {
+  constructor(options: OAuthIssuerOptions) {
     super();
     this.url = undefined;
-
-    this.#keys = new JWKStore();
+    this.aud = options.aud;
+    this._keys = new JWKStore();
   }
 
   /**
@@ -57,7 +66,7 @@ export class OAuth2Issuer extends EventEmitter {
    * @type {JWKStore}
    */
   get keys(): JWKStore {
-    return this.#keys;
+    return this._keys;
   }
 
   /**
@@ -87,7 +96,16 @@ export class OAuth2Issuer extends EventEmitter {
       iat: timestamp,
       exp: timestamp + (opts?.expiresIn ?? defaultTokenTtl),
       nbf: timestamp - 10,
+      aud: [],
     };
+
+    if (this.aud) {
+      payload.aud.push(...this.aud.split(','));
+    }
+
+    if (this.url) {
+      payload.aud.push(this.url);
+    }
 
     if (opts?.scopesOrTransform !== undefined) {
       const scopesOrTransform = opts.scopesOrTransform;

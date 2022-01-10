@@ -40,6 +40,7 @@ export interface Payload {
   iat: number;
   exp: number;
   nbf: number;
+  aud: string[];
   [key: string]: unknown;
 }
 
@@ -100,4 +101,9 @@ export interface OAuth2Endpoints {
 
 export interface OAuth2Options {
   endpoints?: OAuth2Endpoints;
+  audience?: string;
+}
+
+export interface OAuthIssuerOptions {
+  aud?: string;
 }

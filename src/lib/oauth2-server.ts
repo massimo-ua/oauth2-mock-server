@@ -48,7 +48,10 @@ export class OAuth2Server extends HttpServer {
       throw 'Both key and cert need to be supplied to start the server with https';
     }
 
-    const iss = new OAuth2Issuer();
+    const iss = new OAuth2Issuer({
+      aud: oauth2Options?.audience,
+    });
+
     const serv = new OAuth2Service(iss, oauth2Options?.endpoints);
 
     let options: HttpServerOptions | undefined = undefined;

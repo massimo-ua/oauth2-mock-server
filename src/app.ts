@@ -7,9 +7,10 @@ const host = process.env.APP_HOST || '0.0.0.0';
 
 void (async () => {
   const server = new OAuth2Server(undefined, undefined, {
+    audience: process.env.TOKEN_AUDIENCE,
     endpoints: {
-      token: '/oauth/token',
-      wellKnownDocument: '/.well-known/jwks.json',
+      token: process.env.TOKEN_ENDPOINT_URL || '/oauth/token',
+      jwks: process.env.JWKS_ENDPOINT_URL || '/.well-known/jwks.json',
     },
   });
   // Generate a new RSA key and add it to the keystore
